@@ -1,5 +1,5 @@
 //
-//  UserSearchTests.swift
+//  HTTPNetworkServiceTests.swift
 //  UserSearchTests
 //
 //  Created by Rajneesh Biswal on 21/03/23.
@@ -49,7 +49,7 @@ class MockURLProtocol: URLProtocol {
     }
 }
 
-final class UserSearchTests: XCTestCase {
+final class HTTPNetworkServiceTests: XCTestCase {
     
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
@@ -58,14 +58,17 @@ final class UserSearchTests: XCTestCase {
     override func tearDownWithError() throws {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
-    
-    private var cancellableSubscriptions: Set<AnyCancellable> = []
-    func testCommonNetworkService() throws {
+
+    private func createMockUrlSession() -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
-        let urlSession = URLSession(configuration: configuration)
-        let networkService: NetworkService = HttpNetworkService(session: urlSession)
-        let endpoint = NetworkRequest(baseURL: "http://MockResponse")
+        return URLSession(configuration: configuration)
+    }
+
+    private var cancellableSubscriptions: Set<AnyCancellable> = []
+    func test_SuccessfullNetworkResponse() throws {
+        let networkService: NetworkService = HttpNetworkService(session: createMockUrlSession())
+        let endpoint = NetworkRequest(baseURL: "https://xyz/SuccessResponse")
         let expectation = XCTestExpectation(description: "return mocked response present in project bundle")
         networkService.makeNetworkRequest(endpoint, responseType: UserListResponse.self)
             .sink(receiveCompletion: { _ in }) { userListResponse in
@@ -75,11 +78,9 @@ final class UserSearchTests: XCTestCase {
     }
     
     func test_IncorrectURLInNetworkService() {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.protocolClasses = [MockURLProtocol.self]
-        let urlSession = URLSession(configuration: configuration)
-        let networkService: NetworkService = HttpNetworkService(session: urlSession)
-        let endpoint = NetworkRequest(baseURL: "xyz")
+        let networkService: NetworkService = HttpNetworkService(session: createMockUrlSession())
+        
+        let endpoint = NetworkRequest(baseURL: "//**xyz???u??", method: .post, headers: ["***": ""], body: nil, queryParams:["abc": "xyz", "": ""])
         let expectation = XCTestExpectation(description: "return mocked response present in project bundle")
         networkService.makeNetworkRequest(endpoint, responseType: UserListResponse.self)
             .sink(receiveCompletion: { result in
@@ -87,6 +88,26 @@ final class UserSearchTests: XCTestCase {
                 case .failure(let error):
                     print("error occured \(error)")
                     expectation.fulfill()
+                case .finished:
+                    fatalError("should not be executed")
+                }
+            }) { userListResponse in
+                expectation.fulfill()
+            }.store(in: &cancellableSubscriptions)
+        wait(for: [expectation], timeout: 30)
+    }
+
+    func test_IncorrectResponseInNetworkService() {
+        let networkService: NetworkService = HttpNetworkService(session: createMockUrlSession())
+        let endpoint = NetworkRequest(baseURL: "https://xyz/FailureResponse")
+        let expectation = XCTestExpectation(description: "return mocked response present in project bundle")
+        networkService.makeNetworkRequest(endpoint, responseType: UserListResponse.self)
+            .sink(receiveCompletion: { result in
+                switch result {
+                case .failure(let error):
+                    print("error occured \(error)")
+                    expectation.fulfill()
+
                 case .finished:
                     fatalError("should not be executed")
                 }

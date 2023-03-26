@@ -8,7 +8,7 @@
 import Foundation
 import CoreData
 
-protocol UserSearchDataStorageService {
+public protocol UserSearchDataStorageService {
 
     func fetchUsersWithName(startingWith text: String,
                             pageOffset: Int,
@@ -23,9 +23,12 @@ protocol UserSearchDataStorageService {
     func getUserImageInfo(_ url: String) throws -> AvatarManagedObject?
 }
 
-class UserSearchCoreDataService: UserSearchDataStorageService {
-    //lazily load persistentContainer
-    lazy var persistentContainer: NSPersistentContainer = {
+public protocol PersistentContainerProvider {
+    var persistentContainer: NSPersistentContainer { get }
+}
+
+class CoreDataStack: PersistentContainerProvider {
+    lazy public var persistentContainer: NSPersistentContainer = {
         let container = NSPersistentContainer(name: "UserSearch")
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
@@ -34,6 +37,10 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
         })
         return container
     }()
+}
+
+
+class UserSearchCoreDataService: UserSearchDataStorageService {
 
     //lazily load mainManagedObjectContext as it depends on lazy loading of persistentContainer
     lazy var mainManagedObjectContext = {
@@ -41,7 +48,13 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
         return self.persistentContainer.viewContext
     }()
 
-    func fetchUsersWithName(startingWith text: String,
+    private let persistentContainer: NSPersistentContainer
+
+    init(coreDataStack: PersistentContainerProvider = CoreDataStack()) {
+        self.persistentContainer = coreDataStack.persistentContainer
+    }
+
+    public func fetchUsersWithName(startingWith text: String,
                             pageOffset: Int,
                             pageSize: Int) throws -> [UserManagedObject] {
         let fetchRequest = UserManagedObject.fetchRequest()
@@ -80,7 +93,7 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
         })
     }
 
-    func batchInsertUsers(_ users: [Model.User], completionHandler: @escaping (Error?) -> Void ) {
+    public func batchInsertUsers(_ users: [Model.User], completionHandler: @escaping (Error?) -> Void ) {
         let bgContext = persistentContainer.newBackgroundContext()
         bgContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
@@ -95,7 +108,7 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
         }
     }
 
-    func saveUserImageInfo(_ imageInfo: Model.Avatar,
+    public func saveUserImageInfo(_ imageInfo: Model.Avatar,
                                    completionHandlet: @escaping (Error?) -> Void) {
 
         let bgContext = persistentContainer.newBackgroundContext()
@@ -115,7 +128,7 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
         }
     }
 
-    func getUserImageInfo(_ url: String) throws -> AvatarManagedObject? {
+    public func getUserImageInfo(_ url: String) throws -> AvatarManagedObject? {
         let fetchRequest = AvatarManagedObject.fetchRequest()
         let imageUrlPredicate = NSPredicate(format: "%K == %@",
                                                       #keyPath(AvatarManagedObject.url), url)
