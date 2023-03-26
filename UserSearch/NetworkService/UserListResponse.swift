@@ -8,7 +8,7 @@
 import Foundation
 
 
-struct UserListResponse: Codable {
+public struct UserListResponse: Codable {
     let error: String?
     let status: Bool?
     let users: [UserInfo]?
@@ -19,7 +19,7 @@ struct UserListResponse: Codable {
         case users
     }
 
-    struct UserInfo: Codable {
+    public struct UserInfo: Codable {
         let avatarURL: String?
         let displayName: String?
         let id: Int?
