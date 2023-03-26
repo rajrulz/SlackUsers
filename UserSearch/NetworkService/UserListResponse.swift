@@ -34,15 +34,15 @@ public struct UserListResponse: Codable {
     }
 }
 
-enum Model {
-    struct User {
+public enum Model {
+    public struct User {
         let avatarURL: String
         let displayName: String
         let id: Int
         let userName: String
     }
 
-    struct Avatar {
+    public struct Avatar {
         let url: String
         let image: Data
     }

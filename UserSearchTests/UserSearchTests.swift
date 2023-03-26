@@ -64,7 +64,7 @@ final class UserSearchTests: XCTestCase {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
         let urlSession = URLSession(configuration: configuration)
-        let networkService: Networking = HttpService(session: urlSession)
+        let networkService: NetworkService = HttpNetworkService(session: urlSession)
         let endpoint = NetworkRequest(baseURL: "http://MockResponse")
         let expectation = XCTestExpectation(description: "return mocked response present in project bundle")
         networkService.makeNetworkRequest(endpoint, responseType: UserListResponse.self)
@@ -78,7 +78,7 @@ final class UserSearchTests: XCTestCase {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
         let urlSession = URLSession(configuration: configuration)
-        let networkService: Networking = HttpService(session: urlSession)
+        let networkService: NetworkService = HttpNetworkService(session: urlSession)
         let endpoint = NetworkRequest(baseURL: "xyz")
         let expectation = XCTestExpectation(description: "return mocked response present in project bundle")
         networkService.makeNetworkRequest(endpoint, responseType: UserListResponse.self)

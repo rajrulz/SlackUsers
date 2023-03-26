@@ -15,11 +15,11 @@ protocol UserSearchNetworkService {
 }
 
 final class UserSearchNetworkServiceClient: UserSearchNetworkService {
-    private let networkService: Networking
+    private let networkService: NetworkService
 
     private let baseURL: String = "https://slack-users.herokuapp.com/search"
 
-    init(networkService: Networking = HttpService()) {
+    init(networkService: NetworkService = HttpNetworkService()) {
         self.networkService = networkService
     }
 

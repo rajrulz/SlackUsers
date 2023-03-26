@@ -59,12 +59,12 @@ enum NetworkingError: Error {
     case parsingFailure
 }
 
-public protocol Networking {
+public protocol NetworkService {
     func makeNetworkRequest<RequestEndpoint: Endpoint, Response: Decodable>(
         _ endpoint: RequestEndpoint, responseType: Response.Type) -> AnyPublisher<Response, Error>
 }
 
-final public class HttpService: Networking {
+final public class HttpNetworkService: NetworkService {
 
     private var session: URLSession
 

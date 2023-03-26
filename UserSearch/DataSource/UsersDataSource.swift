@@ -9,7 +9,7 @@ import Foundation
 import Combine
 import CoreData
 
-protocol UsersDataSource {
+public protocol UsersDataSource {
     func loadSavedDataFor(searchedText: String, pageOffset: Int, pageSize: Int) -> AnyPublisher<[Model.User], Error>
     
     func loadDataFor(searchedText: String, pageOffset: Int, pageSize: Int) -> AnyPublisher<[Model.User], Error>
@@ -18,8 +18,8 @@ protocol UsersDataSource {
 }
 
 //MARK: Repository pattern
-/// This class fetches UserInfo either from SQLite or BE via API Call.
-class UsersDataSourceRepository: UsersDataSource {
+/// This class fetches Data required by Coordinator to populate the view model either from SQLite or BE via API Call.
+final public class UsersDataSourceRepository: UsersDataSource {
 
     private let userSearchDBService: UserSearchDataStorageService
 
@@ -40,7 +40,7 @@ class UsersDataSourceRepository: UsersDataSource {
     ///   - pageOffset: page index (starts with 0)
     ///   - pageSize: `Configuration.pageSize`
     /// - Returns: either Array of userInfo or error
-    public func fetchUsersFromDBWithName(startingWith text: String,
+    private func fetchUsersFromDBWithName(startingWith text: String,
                                          pageOffset: Int = 0,
                                          pageSize: Int = Configuration.pageSize) -> Result<[Model.User], Error> {
         do {
@@ -65,6 +65,12 @@ class UsersDataSourceRepository: UsersDataSource {
                 .eraseToAnyPublisher()
     }
 
+    /// checks if searched text is empty then fetches the records from DB. else
+    /// checks for pageOffset if 0 then fetches from network else from DB
+    /// - Parameter searchedText: text that is searched by user
+    /// - Parameter pageOffset: page offset of the table view
+    /// - Parameter pageSize: count of cells in 1 page. `Configuration.PageSize`
+    /// - Returns: returns publisher of `User` model or `error`
     public func loadDataFor(searchedText: String, pageOffset: Int, pageSize: Int) -> AnyPublisher<[Model.User], Error> {
         if searchedText.isEmpty || (!searchedText.isEmpty && pageOffset != 0) {
             return fetchUsersFromDBWithName(startingWith: searchedText, pageOffset: pageOffset, pageSize: pageSize)
@@ -74,7 +80,10 @@ class UsersDataSourceRepository: UsersDataSource {
             return fetchUsersFromAPIWhoseName(startsWith: searchedText)
         }
     }
-
+    
+    /// Checks is image is available in DB then fetches from DB else fetched from network
+    /// - Parameter url: remote image url
+    /// - Returns: returns publisher of `Avatar` model or error
     public func image(fromUrl url: String) -> AnyPublisher<Model.Avatar, Error> {
         if let avatar = self.fetchImageFromDB(withUrl: url) {
             return Result<Model.Avatar, Error>.success(avatar).publisher.eraseToAnyPublisher()
@@ -88,7 +97,7 @@ class UsersDataSourceRepository: UsersDataSource {
     /// - Parameters:
     ///   - text: searched text
     ///   - completionHandler: async block returns `Result<[UserInfo], Error>`
-    public func fetchUsersFromAPIWhoseName(startsWith text: String) -> AnyPublisher<[Model.User], Error>  {
+    private func fetchUsersFromAPIWhoseName(startsWith text: String) -> AnyPublisher<[Model.User], Error>  {
         
         userSearchNetworkService.fetchUsers(forSearchedText: text)
             .compactMap { $0.users }
@@ -116,10 +125,11 @@ class UsersDataSourceRepository: UsersDataSource {
             }
             .eraseToAnyPublisher()
     }
-    
-}
 
-extension UsersDataSourceRepository {
+    
+    /// Fetches image binary data from DB
+    /// - Parameter url: remote url of image
+    /// - Returns: `Avatar` model
     private func fetchImageFromDB(withUrl url: String) -> Model.Avatar? {
         do {
             let avatar = try userSearchDBService.getUserImageInfo(url)
@@ -129,7 +139,10 @@ extension UsersDataSourceRepository {
             return nil
         }
     }
-
+    
+    /// Fetches image from network
+    /// - Parameter url: remote url of image
+    /// - Returns: `Avatar` model
     private func fetchRemoteImageFrom(url: String) -> AnyPublisher<Model.Avatar, Error> {
         userSearchNetworkService.fetchUserImage(from: url)
             .mapError { $0 as Error }

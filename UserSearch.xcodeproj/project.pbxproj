@@ -28,7 +28,7 @@
 		1247BF7529CA2B0D007F5A40 /* UserSearchListCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1247BF7429CA2B0D007F5A40 /* UserSearchListCoordinator.swift */; };
 		1247BF7729CA2DB7007F5A40 /* UserSearchNetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1247BF7629CA2DB7007F5A40 /* UserSearchNetworkService.swift */; };
 		1247BF7A29CA3333007F5A40 /* UserListResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1247BF7929CA3333007F5A40 /* UserListResponse.swift */; };
-		1247BF7D29CA3AB0007F5A40 /* Networking.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1247BF7C29CA3AB0007F5A40 /* Networking.swift */; };
+		1247BF7D29CA3AB0007F5A40 /* NetworkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1247BF7C29CA3AB0007F5A40 /* NetworkService.swift */; };
 		1268365929CA3F49007A2933 /* UserSearchDataStorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1268365829CA3F49007A2933 /* UserSearchDataStorageService.swift */; };
 		1268366E29CA73B4007A2933 /* UIView+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1268366D29CA73B4007A2933 /* UIView+Extension.swift */; };
 		1268367029CA7640007A2933 /* UIFont+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1268366F29CA7640007A2933 /* UIFont+Extension.swift */; };
@@ -84,7 +84,7 @@
 		1247BF7429CA2B0D007F5A40 /* UserSearchListCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSearchListCoordinator.swift; sourceTree = "<group>"; };
 		1247BF7629CA2DB7007F5A40 /* UserSearchNetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSearchNetworkService.swift; sourceTree = "<group>"; };
 		1247BF7929CA3333007F5A40 /* UserListResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserListResponse.swift; sourceTree = "<group>"; };
-		1247BF7C29CA3AB0007F5A40 /* Networking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Networking.swift; sourceTree = "<group>"; };
+		1247BF7C29CA3AB0007F5A40 /* NetworkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkService.swift; sourceTree = "<group>"; };
 		1268365829CA3F49007A2933 /* UserSearchDataStorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSearchDataStorageService.swift; sourceTree = "<group>"; };
 		1268366D29CA73B4007A2933 /* UIView+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIView+Extension.swift"; sourceTree = "<group>"; };
 		1268366F29CA7640007A2933 /* UIFont+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIFont+Extension.swift"; sourceTree = "<group>"; };
@@ -237,7 +237,7 @@
 		1247BF7B29CA3A96007F5A40 /* Commons */ = {
 			isa = PBXGroup;
 			children = (
-				1247BF7C29CA3AB0007F5A40 /* Networking.swift */,
+				1247BF7C29CA3AB0007F5A40 /* NetworkService.swift */,
 				1268367129CB0FEF007A2933 /* Config.swift */,
 				1268367329CB117E007A2933 /* KeyValuePreferenceStore.swift */,
 				1268367529CB23C7007A2933 /* BaseCoordinator.swift */,
@@ -418,7 +418,7 @@
 				1268367A29CB305C007A2933 /* UIColor+Extension.swift in Sources */,
 				1268367229CB0FEF007A2933 /* Config.swift in Sources */,
 				123E419029D020D100B8A3FB /* RecentSearchesCoordinator.swift in Sources */,
-				1247BF7D29CA3AB0007F5A40 /* Networking.swift in Sources */,
+				1247BF7D29CA3AB0007F5A40 /* NetworkService.swift in Sources */,
 				1247BF3F29CA29CC007F5A40 /* UserSearchListViewController.swift in Sources */,
 				1268367F29CB38DE007A2933 /* UserSearchListTableViewCell.swift in Sources */,
 				1268368129CB49E3007A2933 /* UsersDataSource.swift in Sources */,
