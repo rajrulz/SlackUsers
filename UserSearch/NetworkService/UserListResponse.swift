@@ -1,0 +1,49 @@
+//
+//  UserListResponse.swift
+//  UserSearch
+//
+//  Created by Rajneesh Biswal on 22/03/23.
+//
+
+import Foundation
+
+
+struct UserListResponse: Codable {
+    let error: String?
+    let status: Bool?
+    let users: [UserInfo]?
+
+    enum CodingKeys: String, CodingKey {
+        case status = "ok"
+        case error
+        case users
+    }
+
+    struct UserInfo: Codable {
+        let avatarURL: String?
+        let displayName: String?
+        let id: Int?
+        let userName: String?
+
+        enum CodingKeys: String, CodingKey {
+            case avatarURL = "avatar_url"
+            case displayName = "display_name"
+            case id
+            case userName = "username"
+        }
+    }
+}
+
+enum Model {
+    struct User {
+        let avatarURL: String
+        let displayName: String
+        let id: Int
+        let userName: String
+    }
+
+    struct Avatar {
+        let url: String
+        let image: Data
+    }
+}
