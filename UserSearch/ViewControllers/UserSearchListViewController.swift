@@ -169,12 +169,22 @@ class UserSearchListViewController: UIViewController {
         case .loadedWithZeroRecords:
             hideActivityLoaderView()
             // show toast mssg
+            showAlertForZeroRecords()
         case .loadedWithFailure(let pageOffset, let error):
             hideActivityLoaderView()
             loadedPageOffsets.remove(pageOffset)
             print("\(error) occured while calling api")
         }
         searchResultsTableView.reloadData()
+    }
+
+    private func showAlertForZeroRecords() {
+        let alertController = UIAlertController(title: "Sorry!", message: "No records found.", preferredStyle: .alert)
+        searchController.present(alertController, animated: true)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            alertController.dismiss(animated: true)
+        }
     }
 }
 
@@ -222,10 +232,6 @@ extension UserSearchListViewController: UISearchControllerDelegate {
                       scheduler: RunLoop.main)
             .sink(receiveValue: { [unowned self] (value) in
                 self.loadedPageOffsets.removeAll()
-                self.model.userCells = []
-                guard !model.isDenied(searchedText: value) else {
-                    return
-                }
                 loadedPageOffsets.insert(0)
                 print("User searched \(value)")
                 self.viewDelegate?.didEnterText(value, sender: self.searchTextField)
@@ -245,17 +251,11 @@ extension UserSearchListViewController {
         var screenTitle: String = "Slack Users"
         var searchTextPlaceHolder: String = "Search user names"
         var userCells: [UserSearchListTableViewCell.Model] = []
-        var searchedText: String = ""
         var viewState: ViewState = .loadedWithSuccess
-        var deniedSearchTexts: Set<String> = []
         var isSearchButtonShown: Bool = false
         var searchButtonTitle: String = "Search"
         var pageSize: Int = 0
         var debounceInterval: Int = 0
-
-        func isDenied(searchedText text: String) -> Bool {
-            deniedSearchTexts.contains(text)
-        }
     }
 }
 

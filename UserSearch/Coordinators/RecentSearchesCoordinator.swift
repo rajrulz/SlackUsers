@@ -16,22 +16,18 @@ final class RecentSerchesCoordinator: Coordinator<Void> {
 
     private let viewController: UserSearchListViewController
 
-    private let sharedPreferences: any KeyValueStore<[String]>
-
     private var cancellableSubscribers: Set<AnyCancellable> = []
 
     init(navigationController: UINavigationController,
          userDataSource: UsersDataSource =
          UsersDataSourceRepository(userSearchService: UserSearchNetworkServiceClient(),
-                                   userSearchDBService: UserSearchCoreDataService()),
-         keyValueStore: some KeyValueStore<[String]> = KeyValuePreferenceStore<[String]>()) {
+                                   userSearchDBService: UserSearchCoreDataService())) {
         self.navigationController = navigationController
         self.dataSource = userDataSource
         self.viewController = .init(model: .init(screenTitle: "Recent Searches",
                                                  isSearchButtonShown: true,
                                                  pageSize: Configuration.pageSize,
                                                  debounceInterval: Configuration.searchWaitTimeInMilliSeconds))
-        self.sharedPreferences = keyValueStore
     }
 
     override func start() {
@@ -64,7 +60,7 @@ extension RecentSerchesCoordinator: UserSearchListViewControllerDelegate {
                 let newUserCells = users.map { UserSearchListTableViewCell.Model(userInfo: $0) }
                 self?.preLoadImages(forNewCellModels: newUserCells, atPageOffset: 0)
                 self?.viewController.model.userCells = newUserCells
-                self?.viewController.model.viewState = users.isEmpty ? .loadedWithZeroRecords : .loadedWithSuccess
+                self?.viewController.model.viewState = .loadedWithSuccess
             }.store(in: &cancellableSubscribers)
     }
 

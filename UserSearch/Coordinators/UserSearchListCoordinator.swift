@@ -16,7 +16,9 @@ final class UserSearchListCoordinator: Coordinator<Void> {
 
     private let viewController: UserSearchListViewController
 
-    private let sharedPreferences: any KeyValueStore<[String]>
+    private let sharedPreferences: UserDefaults
+
+    private var denyList: Set<String>!
 
     private var cancellableSubscribers: Set<AnyCancellable> = []
 
@@ -24,25 +26,28 @@ final class UserSearchListCoordinator: Coordinator<Void> {
          userDataSource: UsersDataSource =
          UsersDataSourceRepository(userSearchService: UserSearchNetworkServiceClient(),
                                    userSearchDBService: UserSearchCoreDataService()),
-         keyValueStore: some KeyValueStore<[String]> = KeyValuePreferenceStore<[String]>()) {
+         sharedPreferences: UserDefaults = UserDefaults.standard) {
         self.navigationController = navigationController
         self.dataSource = userDataSource
         self.viewController = .init(model: .init(screenTitle: "Search Slack Users",
                                                  pageSize: Configuration.pageSize,
                                                  debounceInterval: Configuration.searchWaitTimeInMilliSeconds))
-        self.sharedPreferences = keyValueStore
+        self.sharedPreferences = sharedPreferences
+        super.init()
+        self.denyList = populateDenyList()
+
+        addObserverToSaveDenyList()
     }
 
     override func start() {
-        viewController.model.deniedSearchTexts = populateDenyList()
         viewController.viewDelegate = self
         viewController.coordinator = self
         viewController.model.userCells.removeAll()
         navigationController.pushViewController(viewController, animated: true)
     }
 
-    func populateDenyList() -> Set<String> {
-        if let denyList = sharedPreferences.value(forKey: SharedPrefereces.Keys.denyList) {
+    private func populateDenyList() -> Set<String> {
+        if let denyList = sharedPreferences.value(forKey: SharedPrefereces.Keys.denyList) as? [String] {
             return Set(denyList)
         } else {
             // read from file
@@ -56,23 +61,44 @@ final class UserSearchListCoordinator: Coordinator<Void> {
                 return str.isEmpty ? nil : str
             }
 
-            sharedPreferences.set(value: denyList, forKey: SharedPrefereces.Keys.denyList)
             return Set(denyList)
         }
+    }
+
+    private func addObserverToSaveDenyList() {
+        NotificationCenter.default.publisher(for:
+            UIApplication.willResignActiveNotification)
+        .sink { [weak self] _ in
+            guard let self = self else { return }
+            self.sharedPreferences.set(Array(self.denyList), forKey: SharedPrefereces.Keys.denyList)
+        }
+        .store(in: &cancellableSubscribers)
     }
 }
 
 
 extension UserSearchListCoordinator: UserSearchListViewControllerDelegate {
-    /// Loads data from DataSource
+    /// Loads data from network and returns first set of page size records
     /// - Parameters:
-    ///   - text: <#text description#>
-    ///   - sender: <#sender description#>
+    ///   - text: searched text
+    ///   - sender: sender of delegate
     func didEnterText(_ text: String, sender: UITextField?) {
         if text.isEmpty {
-            viewController.model.userCells = []
+            var model = viewController.model
+            model.userCells = []
+            model.viewState = .loadedWithSuccess
+            viewController.model = model
             return
         }
+
+        if denyList.contains(text.lowercased()) {
+            var model = viewController.model
+            model.userCells = []
+            model.viewState = .loadedWithZeroRecords
+            viewController.model = model
+            return
+        }
+
         viewController.model.viewState = .loading
         viewController.model.userCells = []
 
@@ -82,7 +108,12 @@ extension UserSearchListCoordinator: UserSearchListViewControllerDelegate {
                 let newUserCells = users.map { UserSearchListTableViewCell.Model(userInfo: $0) }
                 self?.preLoadImages(forNewCellModels: newUserCells, atPageOffset: 0)
                 self?.viewController.model.userCells = newUserCells
-                self?.viewController.model.viewState = users.isEmpty ? .loadedWithZeroRecords : .loadedWithSuccess
+                if users.isEmpty {
+                    self?.viewController.model.viewState = .loadedWithZeroRecords
+                    self?.denyList.insert(text.lowercased())
+                } else {
+                    self?.viewController.model.viewState = .loadedWithSuccess
+                }
                 print("received from network \(users)")
             }.store(in: &cancellableSubscribers)
     }
