@@ -188,8 +188,12 @@ class UserSearchListViewController: UIViewController {
 
     private func showAlertForError(_ error: Error) {
         let alertController = UIAlertController(title: "Alert!",
-                                                message: error._code == model.internetErrorCode  ? model.internetConnectionErrorMssg: model.genericErrorMssg,
+                                                message: model.genericErrorMssg,
                                                 preferredStyle: .actionSheet)
+        if let error = error as? NetworkingError,
+           case NetworkingError.noInternet = error {
+            alertController.message = model.noInternetConnectionErrorMssg
+        }
         let okAction = UIAlertAction(title: "Ok", style: .cancel)
         alertController.addAction(okAction)
         searchController.present(alertController, animated: true)
@@ -264,10 +268,9 @@ extension UserSearchListViewController {
         var searchButtonTitle: String = "Search"
         var pageSize: Int = 0
         var debounceInterval: Int = 0
-        let internetConnectionErrorMssg: String = "No internet connection. Please search users when online."
+        let noInternetConnectionErrorMssg: String = "No internet connection. Please search users when online."
         let genericErrorMssg: String = "Something went wrong!"
-        let internetErrorCode: Int = -1009
-        let noRecordsFoundErrorMssg: String = "No records found."
+        let noRecordsFoundErrorMssg: String = "Users not found. Searched Text is blacklisted."
     }
 }
 

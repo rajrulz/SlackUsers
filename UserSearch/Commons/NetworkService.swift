@@ -8,10 +8,6 @@
 import Foundation
 import Combine
 
-enum EndpointError: Error {
-    case incorrectURL(urlStr: String)
-}
-
 public enum HTTPMethod: String {
     case post
     case get
@@ -56,8 +52,10 @@ extension Endpoint {
 }
 
 enum NetworkingError: Error {
+    case incorrectURL(urlStr: String)
     case responseDataNotFound
     case parsingFailure
+    case noInternet
 }
 
 public protocol NetworkService {
@@ -77,13 +75,18 @@ final public class HttpNetworkService: NetworkService {
         _ endpoint: RequestEndpoint, responseType: Response.Type) -> AnyPublisher<Response, Error> {
 
         guard let request = endpoint.createURLRequest() else {
-            return Fail(error: EndpointError.incorrectURL(urlStr: endpoint.baseURL))
+            return Fail(error: NetworkingError.incorrectURL(urlStr: endpoint.baseURL))
                     .eraseToAnyPublisher()
         }
 
         return session.dataTaskPublisher(for: request)
                 .compactMap { $0.data }
-                .mapError { $0 as Error }
+                .mapError {
+                    if $0.errorCode > -2000 && $0.errorCode <= -1000 {
+                        return NetworkingError.noInternet as Error
+                    }
+                    return $0 as Error
+                }
                 .decode(type: responseType, decoder: JSONDecoder())
                 .eraseToAnyPublisher()
     }
