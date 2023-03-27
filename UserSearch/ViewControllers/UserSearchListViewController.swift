@@ -98,14 +98,12 @@ class UserSearchListViewController: UIViewController {
         super.viewWillAppear(animated)
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.rightBarButtonItem = .init(customView: searchButton)
-        print("view will appear")
         loadedPageOffsets.removeAll()
         loadedPageOffsets.insert(0)
         viewDelegate?.didEnterText("", sender: nil)
     }
 
     deinit {
-        print("deinit called")
         coordinator?.finish()
     }
 
@@ -173,18 +171,28 @@ class UserSearchListViewController: UIViewController {
         case .loadedWithFailure(let pageOffset, let error):
             hideActivityLoaderView()
             loadedPageOffsets.remove(pageOffset)
-            print("\(error) occured while calling api")
+            showAlertForError(error)
         }
         searchResultsTableView.reloadData()
     }
 
     private func showAlertForZeroRecords() {
-        let alertController = UIAlertController(title: "Sorry!", message: "No records found.", preferredStyle: .alert)
+        let alertController = UIAlertController(title: "Alert!", message: model.noRecordsFoundErrorMssg,
+                                                preferredStyle: .actionSheet)
         searchController.present(alertController, animated: true)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             alertController.dismiss(animated: true)
         }
+    }
+
+    private func showAlertForError(_ error: Error) {
+        let alertController = UIAlertController(title: "Alert!",
+                                                message: error._code == model.internetErrorCode  ? model.internetConnectionErrorMssg: model.genericErrorMssg,
+                                                preferredStyle: .actionSheet)
+        let okAction = UIAlertAction(title: "Ok", style: .cancel)
+        alertController.addAction(okAction)
+        searchController.present(alertController, animated: true)
     }
 }
 
@@ -256,6 +264,10 @@ extension UserSearchListViewController {
         var searchButtonTitle: String = "Search"
         var pageSize: Int = 0
         var debounceInterval: Int = 0
+        let internetConnectionErrorMssg: String = "No internet connection. Please search users when online."
+        let genericErrorMssg: String = "Something went wrong!"
+        let internetErrorCode: Int = -1009
+        let noRecordsFoundErrorMssg: String = "No records found."
     }
 }
 

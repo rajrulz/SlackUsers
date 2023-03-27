@@ -12,19 +12,27 @@ final class RecentSerchesCoordinator: Coordinator<Void> {
 
     private let navigationController : UINavigationController
 
-    private let dataSource: UsersDataSource
+    private let usersDataSource: UsersPersistentDataSource
+
+    private let imageDataSource: UserImageDataSource
 
     private let viewController: UserSearchListViewController
 
     private var cancellableSubscribers: Set<AnyCancellable> = []
 
     init(navigationController: UINavigationController,
-         userDataSource: UsersDataSource =
-         UsersDataSourceRepository(userSearchService: UserSearchNetworkServiceClient(),
-                                   userSearchDBService: UserSearchCoreDataService())) {
+         usersSearchNetworkService: UserSearchNetworkService = UserSearchNetworkServiceClient(),
+         userSearchDataStorageService: UserSearchDataStorageService = UserSearchCoreDataService()) {
+
         self.navigationController = navigationController
-        self.dataSource = userDataSource
-        self.viewController = .init(model: .init(screenTitle: "Recent Searches",
+
+        self.usersDataSource = UsersDataSourceRepository(userSearchService: usersSearchNetworkService,
+                                                         userSearchDBService: userSearchDataStorageService)
+
+        self.imageDataSource = UserImageDataSourceRepository(userSearchService: usersSearchNetworkService,
+                                                             userSearchDBService: userSearchDataStorageService)
+
+        self.viewController = .init(model: .init(screenTitle: Constants.ScreenTitle.recentSearches,
                                                  isSearchButtonShown: true,
                                                  pageSize: Configuration.pageSize,
                                                  debounceInterval: Configuration.searchWaitTimeInMilliSeconds))
@@ -49,12 +57,12 @@ extension RecentSerchesCoordinator: UserSearchListViewControllerDelegate {
 
     /// Loads data from DataSource
     /// - Parameters:
-    ///   - text: <#text description#>
-    ///   - sender: <#sender description#>
+    ///   - text: searchedText
+    ///   - sender: textfield in which text was entered
     func didEnterText(_ text: String, sender: UITextField?) {
         viewController.model.userCells = []
 
-        dataSource.loadSavedDataFor(searchedText: text, pageOffset: 0, pageSize: Configuration.pageSize)
+        usersDataSource.loadSavedDataFor(searchedText: text, pageOffset: 0, pageSize: Configuration.pageSize)
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { _ in }) { [weak self] users in
                 let newUserCells = users.map { UserSearchListTableViewCell.Model(userInfo: $0) }
@@ -74,7 +82,7 @@ extension RecentSerchesCoordinator: UserSearchListViewControllerDelegate {
     ///   - searchedText: search controller text
     ///   - sender: delegate's sender
     func loadDataFor(searchedText: String, pageOffset: Int, pageSize: Int, sender: UIViewController?) {
-        dataSource.loadSavedDataFor(searchedText: searchedText, pageOffset: pageOffset, pageSize: pageSize)
+        usersDataSource.loadSavedDataFor(searchedText: searchedText, pageOffset: pageOffset, pageSize: pageSize)
             .sink(receiveCompletion: { _ in }) { [weak self] users in
                 guard let self = self else { return }
                 var model = self.viewController.model
@@ -96,7 +104,7 @@ extension RecentSerchesCoordinator: UserSearchListViewControllerDelegate {
 
             let newCellIndexPath = IndexPath(row: index + pageOffset * 20, section: 0)
 
-            dataSource.image(fromUrl: newUserCell.avatarUrl)
+            imageDataSource.image(fromUrl: newUserCell.avatarUrl)
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { _ in }) { [weak self] avatar in
                     guard let self = self else { return }

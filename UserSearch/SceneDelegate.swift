@@ -23,7 +23,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         recentSearchesCoordinator = RecentSerchesCoordinator(navigationController: navigationController)
         recentSearchesCoordinator.start()
         window?.makeKeyAndVisible()
-        print(FileManager.default.urls(for:.cachesDirectory, in: .userDomainMask))
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {

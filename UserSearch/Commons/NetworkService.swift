@@ -50,6 +50,7 @@ extension Endpoint {
         headers?.forEach { request.setValue($1, forHTTPHeaderField: $0) }
         request.httpMethod = self.method.rawValue.uppercased()
         request.httpBody = body
+        request.timeoutInterval = Configuration.networkTimeOutIntervalInSeconds
         return request
     }
 }

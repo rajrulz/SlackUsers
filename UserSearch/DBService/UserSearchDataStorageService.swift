@@ -10,7 +10,7 @@ import CoreData
 
 public protocol UserSearchDataStorageService {
 
-    func fetchUsersWithName(startingWith text: String,
+    func fetchUsersWithDisplayAndUserName(startingWith text: String,
                             pageOffset: Int,
                             pageSize: Int) throws -> [UserManagedObject]
 
@@ -18,27 +18,10 @@ public protocol UserSearchDataStorageService {
                           completionHandler: @escaping (Error?) -> Void )
 
     func saveUserImageInfo(_ imageInfo: Model.Avatar,
-                           completionHandlet: @escaping (Error?) -> Void)
+                           completionHandler: @escaping (Error?) -> Void)
 
     func getUserImageInfo(_ url: String) throws -> AvatarManagedObject?
 }
-
-public protocol PersistentContainerProvider {
-    var persistentContainer: NSPersistentContainer { get }
-}
-
-class CoreDataStack: PersistentContainerProvider {
-    lazy public var persistentContainer: NSPersistentContainer = {
-        let container = NSPersistentContainer(name: "UserSearch")
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            if let error = error as NSError? {
-                fatalError("Unresolved error \(error), \(error.userInfo)")
-            }
-        })
-        return container
-    }()
-}
-
 
 class UserSearchCoreDataService: UserSearchDataStorageService {
 
@@ -54,7 +37,7 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
         self.persistentContainer = coreDataStack.persistentContainer
     }
 
-    public func fetchUsersWithName(startingWith text: String,
+    public func fetchUsersWithDisplayAndUserName(startingWith text: String,
                             pageOffset: Int,
                             pageSize: Int) throws -> [UserManagedObject] {
         let fetchRequest = UserManagedObject.fetchRequest()
@@ -74,7 +57,7 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
         return users
     }
 
-    private func createBatchInsertRequest(_ users: [Model.User], in context: NSManagedObjectContext) -> NSBatchInsertRequest {
+    private func createBatchInsertRequest(forUsers users: [Model.User], in context: NSManagedObjectContext) -> NSBatchInsertRequest {
         let totalCount = users.count
         var index  = 0
         return NSBatchInsertRequest(entity: .entity(forEntityName: UserManagedObject.entityName, in: context)!, managedObjectHandler: { managedObject in
@@ -83,7 +66,7 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
             let user = users[index]
             if let userManagedObject = managedObject as? UserManagedObject {
                 userManagedObject.userName = user.userName
-                userManagedObject.id = Int16(user.id)
+                userManagedObject.id = Int32(user.id)
                 userManagedObject.displayName = user.displayName
                 userManagedObject.avatarURL = user.avatarURL
             }
@@ -98,7 +81,7 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
         bgContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
 
         bgContext.perform {
-            let batchRequest = self.createBatchInsertRequest(users, in: bgContext)
+            let batchRequest = self.createBatchInsertRequest(forUsers: users, in: bgContext)
             do {
                 try bgContext.execute(batchRequest)
                 completionHandler(nil)
@@ -109,7 +92,7 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
     }
 
     public func saveUserImageInfo(_ imageInfo: Model.Avatar,
-                                   completionHandlet: @escaping (Error?) -> Void) {
+                                   completionHandler: @escaping (Error?) -> Void) {
 
         let bgContext = persistentContainer.newBackgroundContext()
         bgContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
@@ -121,9 +104,9 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
             
             do {
                 try bgContext.save()
-                completionHandlet(nil)
+                completionHandler(nil)
             } catch {
-                completionHandlet(error)
+                completionHandler(error)
             }
         }
     }

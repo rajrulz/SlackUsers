@@ -12,7 +12,9 @@ final class UserSearchListCoordinator: Coordinator<Void> {
 
     private let navigationController : UINavigationController
 
-    private let dataSource: UsersDataSource
+    private let usersDataSource: UsersRemoteDataSource
+
+    private let imageDataSource: UserImageDataSource
 
     private let viewController: UserSearchListViewController
 
@@ -23,17 +25,25 @@ final class UserSearchListCoordinator: Coordinator<Void> {
     private var cancellableSubscribers: Set<AnyCancellable> = []
 
     init(navigationController: UINavigationController,
-         userDataSource: UsersDataSource =
-         UsersDataSourceRepository(userSearchService: UserSearchNetworkServiceClient(),
-                                   userSearchDBService: UserSearchCoreDataService()),
+         usersSearchNetworkService: UserSearchNetworkService = UserSearchNetworkServiceClient(),
+         userSearchDataStorageService: UserSearchDataStorageService = UserSearchCoreDataService(),
          sharedPreferences: UserDefaults = UserDefaults.standard) {
+
         self.navigationController = navigationController
-        self.dataSource = userDataSource
-        self.viewController = .init(model: .init(screenTitle: "Search Slack Users",
+
+        self.usersDataSource = UsersDataSourceRepository(userSearchService: usersSearchNetworkService,
+                                                         userSearchDBService: userSearchDataStorageService)
+
+        self.imageDataSource = UserImageDataSourceRepository(userSearchService: usersSearchNetworkService,
+                                                             userSearchDBService: userSearchDataStorageService)
+
+        self.viewController = .init(model: .init(screenTitle: Constants.ScreenTitle.searchUsers,
                                                  pageSize: Configuration.pageSize,
                                                  debounceInterval: Configuration.searchWaitTimeInMilliSeconds))
+
         self.sharedPreferences = sharedPreferences
         super.init()
+
         self.denyList = populateDenyList()
 
         addObserverToSaveDenyList()
@@ -78,11 +88,15 @@ final class UserSearchListCoordinator: Coordinator<Void> {
 
 
 extension UserSearchListCoordinator: UserSearchListViewControllerDelegate {
+
     /// Loads data from network and returns first set of page size records
     /// - Parameters:
     ///   - text: searched text
     ///   - sender: sender of delegate
     func didEnterText(_ text: String, sender: UITextField?) {
+        
+        // check if text is empty.
+        // There needs to be some value in search text in order to make API call.
         if text.isEmpty {
             var model = viewController.model
             model.userCells = []
@@ -91,6 +105,7 @@ extension UserSearchListCoordinator: UserSearchListViewControllerDelegate {
             return
         }
 
+        // check if serched text is not present in denied list.
         if denyList.contains(text.lowercased()) {
             var model = viewController.model
             model.userCells = []
@@ -99,21 +114,41 @@ extension UserSearchListCoordinator: UserSearchListViewControllerDelegate {
             return
         }
 
+        // prepare for api call
         viewController.model.viewState = .loading
         viewController.model.userCells = []
 
-        dataSource.loadDataFor(searchedText: text, pageOffset: 0, pageSize: Configuration.pageSize)
+        // make api call
+        usersDataSource.loadDataFor(searchedText: text, pageOffset: 0, pageSize: Configuration.pageSize)
             .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { _ in }) { [weak self] users in
-                let newUserCells = users.map { UserSearchListTableViewCell.Model(userInfo: $0) }
-                self?.preLoadImages(forNewCellModels: newUserCells, atPageOffset: 0)
-                self?.viewController.model.userCells = newUserCells
-                if users.isEmpty {
-                    self?.viewController.model.viewState = .loadedWithZeroRecords
-                    self?.denyList.insert(text.lowercased())
-                } else {
-                    self?.viewController.model.viewState = .loadedWithSuccess
+            .sink(receiveCompletion: { [weak self] result in
+                switch result {
+                case .failure(let error):
+                    self?.viewController.model.viewState = .loadedWithFailure(pageOffset: 0, error: error)
+                case .finished:
+                    break
                 }
+            }) { [weak self] users in
+                guard let self = self else { return }
+
+                // convert user model to cell view models
+                let newUserCells = users.map { UserSearchListTableViewCell.Model(userInfo: $0) }
+
+                // preload the images for new user cells
+                self.preLoadImages(forNewCellModels: newUserCells, atPageOffset: 0)
+
+                // create the newViewModel
+                var model = self.viewController.model
+                model.userCells = newUserCells
+                if users.isEmpty {
+                    model.viewState = .loadedWithZeroRecords
+                    self.denyList.insert(text.lowercased())
+                } else {
+                    model.viewState = .loadedWithSuccess
+                }
+
+                // assign the new view model
+                self.viewController.model = model
                 print("received from network \(users)")
             }.store(in: &cancellableSubscribers)
     }
@@ -133,13 +168,20 @@ extension UserSearchListCoordinator: UserSearchListViewControllerDelegate {
             return
         }
 
-        dataSource.loadDataFor(searchedText: searchedText, pageOffset: pageOffset, pageSize: pageSize)
+        usersDataSource.loadDataFor(searchedText: searchedText, pageOffset: pageOffset, pageSize: pageSize)
             .sink(receiveCompletion: { _ in }) { [weak self] users in
                 guard let self = self else { return }
+
+                // create the new view model
                 var model = self.viewController.model
                 let newUserCells = users.map { UserSearchListTableViewCell.Model(userInfo: $0) }
+
+                // preload the images for new user cells
                 self.preLoadImages(forNewCellModels: newUserCells, atPageOffset: pageOffset)
+
                 model.userCells = model.userCells + newUserCells
+
+                // assign new view model
                 self.viewController.model = model
             }.store(in: &cancellableSubscribers)
         
@@ -155,7 +197,7 @@ extension UserSearchListCoordinator: UserSearchListViewControllerDelegate {
 
             let newCellIndexPath = IndexPath(row: index + pageOffset * 20, section: 0)
 
-            dataSource.image(fromUrl: newUserCell.avatarUrl)
+            imageDataSource.image(fromUrl: newUserCell.avatarUrl)
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { _ in }) { [weak self] avatar in
                     guard let self = self else { return }

@@ -18,7 +18,7 @@ extension UserManagedObject {
 
     @NSManaged public var avatarURL: String?
     @NSManaged public var displayName: String?
-    @NSManaged public var id: Int16
+    @NSManaged public var id: Int32
     @NSManaged public var userName: String?
 
 }
