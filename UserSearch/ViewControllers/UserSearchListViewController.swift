@@ -181,8 +181,9 @@ class UserSearchListViewController: UIViewController {
                                                 preferredStyle: .actionSheet)
         searchController.present(alertController, animated: true)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             alertController.dismiss(animated: true)
+            self?.searchController.searchBar.searchTextField.resignFirstResponder()
         }
     }
 
@@ -194,7 +195,10 @@ class UserSearchListViewController: UIViewController {
            case NetworkingError.noInternet = error {
             alertController.message = model.noInternetConnectionErrorMssg
         }
-        let okAction = UIAlertAction(title: "Ok", style: .cancel)
+        let okAction = UIAlertAction(title: "Ok", style: .cancel) { [weak self] _ in
+            alertController.dismiss(animated: true)
+            self?.searchController.searchBar.searchTextField.resignFirstResponder()
+        }
         alertController.addAction(okAction)
         searchController.present(alertController, animated: true)
     }
