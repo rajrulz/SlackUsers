@@ -117,7 +117,7 @@ class UserSearchCoreDataService: UserSearchDataStorageService {
                                                       #keyPath(AvatarManagedObject.url), url)
         fetchRequest.predicate = imageUrlPredicate
 
-        let avatars = try mainManagedObjectContext.fetch(fetchRequest)
+        let avatars = try persistentContainer.newBackgroundContext().fetch(fetchRequest)
         guard !avatars.isEmpty else {
             return nil
         }

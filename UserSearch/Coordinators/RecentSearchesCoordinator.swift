@@ -66,7 +66,7 @@ extension RecentSerchesCoordinator: UserSearchListViewControllerDelegate {
             .receive(on: DispatchQueue.main)
             .sink(receiveCompletion: { _ in }) { [weak self] users in
                 let newUserCells = users.map { UserSearchListTableViewCell.Model(userInfo: $0) }
-                self?.preLoadImages(forNewCellModels: newUserCells, atPageOffset: 0)
+                self?.preLoadImages(forNewCellModels: newUserCells, atPageOffset: 0, pageSize: Configuration.pageSize)
                 self?.viewController.model.userCells = newUserCells
                 self?.viewController.model.viewState = .loadedWithSuccess
             }.store(in: &cancellableSubscribers)
@@ -87,7 +87,7 @@ extension RecentSerchesCoordinator: UserSearchListViewControllerDelegate {
                 guard let self = self else { return }
                 var model = self.viewController.model
                 let newUserCells = users.map { UserSearchListTableViewCell.Model(userInfo: $0) }
-                self.preLoadImages(forNewCellModels: newUserCells, atPageOffset: pageOffset)
+                self.preLoadImages(forNewCellModels: newUserCells, atPageOffset: pageOffset, pageSize: pageSize)
                 model.userCells = model.userCells + newUserCells
                 self.viewController.model = model
             }.store(in: &cancellableSubscribers)
@@ -99,10 +99,10 @@ extension RecentSerchesCoordinator: UserSearchListViewControllerDelegate {
     /// - Parameters:
     ///   - cellModels: cell models for which avatar image is to be loaded
     ///   - pageOffset: page offset of cell Models
-    private func preLoadImages(forNewCellModels cellModels: [UserSearchListTableViewCell.Model], atPageOffset pageOffset: Int) {
+    private func preLoadImages(forNewCellModels cellModels: [UserSearchListTableViewCell.Model], atPageOffset pageOffset: Int, pageSize: Int) {
         for (index, newUserCell) in cellModels.enumerated() {
 
-            let newCellIndexPath = IndexPath(row: index + pageOffset * 20, section: 0)
+            let newCellIndexPath = IndexPath(row: index + pageOffset * pageSize, section: 0)
 
             imageDataSource.image(fromUrl: newUserCell.avatarUrl)
                 .receive(on: DispatchQueue.main)

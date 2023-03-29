@@ -135,7 +135,7 @@ extension UserSearchListCoordinator: UserSearchListViewControllerDelegate {
                 let newUserCells = users.map { UserSearchListTableViewCell.Model(userInfo: $0) }
 
                 // preload the images for new user cells
-                self.preLoadImages(forNewCellModels: newUserCells, atPageOffset: 0)
+                self.preLoadImages(forNewCellModels: newUserCells, atPageOffset: 0, pageSize: Configuration.pageSize)
 
                 // create the newViewModel
                 var model = self.viewController.model
@@ -177,7 +177,7 @@ extension UserSearchListCoordinator: UserSearchListViewControllerDelegate {
                 let newUserCells = users.map { UserSearchListTableViewCell.Model(userInfo: $0) }
 
                 // preload the images for new user cells
-                self.preLoadImages(forNewCellModels: newUserCells, atPageOffset: pageOffset)
+                self.preLoadImages(forNewCellModels: newUserCells, atPageOffset: pageOffset, pageSize: pageSize)
 
                 model.userCells = model.userCells + newUserCells
 
@@ -192,10 +192,10 @@ extension UserSearchListCoordinator: UserSearchListViewControllerDelegate {
     /// - Parameters:
     ///   - cellModels: cell models for which avatar image is to be loaded
     ///   - pageOffset: page offset of cell Models
-    private func preLoadImages(forNewCellModels cellModels: [UserSearchListTableViewCell.Model], atPageOffset pageOffset: Int) {
+    private func preLoadImages(forNewCellModels cellModels: [UserSearchListTableViewCell.Model], atPageOffset pageOffset: Int, pageSize: Int) {
         for (index, newUserCell) in cellModels.enumerated() {
 
-            let newCellIndexPath = IndexPath(row: index + pageOffset * 20, section: 0)
+            let newCellIndexPath = IndexPath(row: index + pageOffset * pageSize, section: 0)
 
             imageDataSource.image(fromUrl: newUserCell.avatarUrl)
                 .receive(on: DispatchQueue.main)
